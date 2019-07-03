@@ -78,6 +78,11 @@ Document any optional config settings here. For example::
     # (optional, default: 24).
     ckanext.paraview.some_setting = some_default_value
 
+For CKAN to recognize STL files, add the following line to the list of allowed
+resource formats in `ckan/config/resource_formats.json`.
+
+`["STL", "Stereolithography", "model/stl", []]`
+
 
 ------------------------
 Development Installation
