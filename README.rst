@@ -1,7 +1,3 @@
-.. You should enable this project on travis-ci.org and coveralls.io to make
-   these badges work. The necessary Travis and Coverage config files have been
-   generated for you.
-
 .. image:: https://travis-ci.org/SFB-ELAINE/ckanext-paraview.svg?branch=master
     :target: https://travis-ci.org/SFB-ELAINE/ckanext-paraview
 
@@ -32,22 +28,22 @@
 ckanext-paraview
 =============
 
-.. Put a description of your extension here:
-   What does it do? What features does it have?
-   Consider including some screenshots or embedding a video!
+This is an extension for CKAN that uses the ParaViewWeb Visualizer to provide views
+for STL files. In the future, it will also provide views for DICOM files (and
+hopefully other types as well).
 
 
 ------------
 Requirements
 ------------
 
-For example, you might want to mention here which versions of CKAN this
-extension works with.
-
+Tested with CKAN 2.8.2.
 
 ------------
 Installation
 ------------
+
+Not yet set up with PyPI - cannot be installed with `pip` yet.
 
 .. Add any additional install steps to the list below.
    For example installing any non-Python dependencies or adding any required

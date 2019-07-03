@@ -23,11 +23,13 @@ def add_link (resource_id):
         f = open("/var/lib/ckan/default/pvw/" + \
                 resource_id + ".stl")
         f.close()
+        return ""
     except IOError:
         src = "/var/lib/ckan/default/resources/" + resource_id[0:3] + \
             "/" + resource_id[3:6] + "/" + resource_id[6:]
         dst = "/var/lib/ckan/default/pvw/" + resource_id + ".stl"
         os.link(src, dst)
+        return ""
 
 class ParaviewPlugin(plugins.SingletonPlugin):
     plugins.implements(plugins.IConfigurer)
