@@ -2,39 +2,52 @@ import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
 import os
 
-def add_link (resource_id, package_id):
+def add_links (package_id):
     '''
-    Called in pvw_view.html to add a file extension to a file that is about to
-    be rendered with the PVW Visualizer (because the Visualizer won't open
-    files that do not have a file extension, since it can't tell how it should
-    render them). Checks if a file with the extension exists; if it doesn't,
-    creates a hard link to a new file with the extension. A hard link is
-    deleted when the associated resource is deleted.
-
-    :param resource_id: the ID of the resource to be opened; provides us with
-    the path to the resource's file
-    :type resource_id: string
+    Called in pvw_view.html when a user tries to open a resource using this view.
+    The PVW Visualizer only displays files whose types it can recognize, so
+    this function creates hard links for the resources in the same dataset as the
+    viewed resource to file names with .stl extensions, which allows the
+    Visualizer to open the files in the view. Since a user might want to view
+    more than one file at once, all files in the dataset are processed and
+    put into the same directory where they are all accessible from any
+    resource's view. Each time the view is opened, we check to make sure that all
+    resources in the dataset have been processed, since more may have been added
+    since the last time someone viewed the dataset.
 
     :returns: None
     '''
-    #TODO: make it so the whole dataset is processed in this way when someone views one resource
-    # (should be doable using the package_id and the API action functions)
+
     #TODO: update for DICOM
-    try:
-        f = open("/var/lib/ckan/default/pvw/" + package_id + "/" + \
-                resource_id + ".stl")
-        f.close()
-        return ""
-    except IOError:
-        src = "/var/lib/ckan/default/resources/" + resource_id[0:3] + \
-            "/" + resource_id[3:6] + "/" + resource_id[6:]
-        dst = "/var/lib/ckan/default/pvw/" + package_id + "/" + resource_id + ".stl"
-        try:
-            os.link(src, dst)
-        except OSError:
-            os.mkdir("/var/lib/ckan/default/pvw/" + package_id)
-            os.link(src, dst)
-        return ""
+
+    # dictionary with metadata about the package
+    pkg_dict = toolkit.get_action('package_show')({}, {'id': package_id})
+    # list of dictionaries of metadata about each resource in the package
+    resources = pkg_dict['resources']
+
+    # iterate through the list of resources and create the .stl links if they
+    # don't exist yet
+    for resource in resources:
+        # check if the file is actually an STL file; only process it if it is
+        if resource['format'] == 'STL':
+            resource_id = resource["id"]
+            try:
+                f = open("/var/lib/ckan/default/pvw/" + package_id + "/" + \
+                        resource_id + ".stl")
+                f.close()
+            except IOError:
+                # create the link if it doesn't exist
+                src = "/var/lib/ckan/default/resources/" + resource_id[0:3] + \
+                    "/" + resource_id[3:6] + "/" + resource_id[6:]
+                dst = "/var/lib/ckan/default/pvw/" + package_id + "/" + resource_id + ".stl"
+                try:
+                    os.link(src, dst)
+                except OSError:
+                    # sometimes we have to create the dataset directory to contain
+                    # the .stl resource files
+                    os.mkdir("/var/lib/ckan/default/pvw/" + package_id)
+                    os.link(src, dst)
+    return ""
 
 class ParaviewPlugin(plugins.SingletonPlugin):
     plugins.implements(plugins.IConfigurer)
@@ -117,4 +130,4 @@ class ParaviewPlugin(plugins.SingletonPlugin):
     # ITemplateHelpers
 
     def get_helpers(self):
-        return {"paraview_add_link": add_link}
+        return {"paraview_add_links": add_links}
