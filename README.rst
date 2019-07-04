@@ -64,7 +64,7 @@ To install ckanext-paraview:
    ``/etc/ckan/default/production.ini``).
 
 4. For CKAN to recognize STL files, add the following line to the list of allowed
-resource formats in `ckan/config/resource_formats.json`::
+   resource formats in `ckan/config/resource_formats.json`::
 
     ["STL", "Stereolithography", "model/stl", []]
 
