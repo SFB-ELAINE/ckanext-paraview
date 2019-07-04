@@ -2,7 +2,7 @@ import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
 import os
 
-def add_link (resource_id):
+def add_link (resource_id, package_id):
     '''
     Called in pvw_view.html to add a file extension to a file that is about to
     be rendered with the PVW Visualizer (because the Visualizer won't open
@@ -17,18 +17,22 @@ def add_link (resource_id):
 
     :returns: None
     '''
-    # TODO: this could probably be done in IResourecController after_create()
-    # TODO: update for DICOM
+    #TODO: make it so the whole dataset is processed in this way when someone views one resource
+    #TODO: update for DICOM
     try:
-        f = open("/var/lib/ckan/default/pvw/" + \
+        f = open("/var/lib/ckan/default/pvw/" + package_id + "/" + \
                 resource_id + ".stl")
         f.close()
         return ""
     except IOError:
         src = "/var/lib/ckan/default/resources/" + resource_id[0:3] + \
             "/" + resource_id[3:6] + "/" + resource_id[6:]
-        dst = "/var/lib/ckan/default/pvw/" + resource_id + ".stl"
-        os.link(src, dst)
+        dst = "/var/lib/ckan/default/pvw/" + package_id + "/" + resource_id + ".stl"
+        try:
+            os.link(src, dst)
+        except OSError:
+            os.mkdir("/var/lib/ckan/default/pvw/" + package_id)
+            os.link(src, dst)
         return ""
 
 class ParaviewPlugin(plugins.SingletonPlugin):
@@ -90,8 +94,15 @@ class ParaviewPlugin(plugins.SingletonPlugin):
         recognize its type. This function deletes that extra file when the
         original resource is deleted.
         '''
+        filename = resource["id"] + ".stl"
+        path = ""
+        # we don't know the package ID of the dataset the resource belongs to,
+        # so we need to manually find the name ofthe directory that contains
+        # the .stl file
+        for dirname, dirs, files in os.walk("/var/lib/ckan/default/pvw/"):
+            if filename in files:
+                path = os.path.join(dirname, filename)
         # TODO: update for DICOM
-        path = "/var/lib/ckan/default/pvw/" + resource["id"] + ".stl"
         try:
             os.remove(path)
         except:

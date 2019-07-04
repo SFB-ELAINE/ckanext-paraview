@@ -24,9 +24,9 @@
     :target: https://pypi.python.org/pypi/ckanext-paraview/
     :alt: License
 
-=============
+=====================
 ckanext-paraview
-=============
+=====================
 
 This is an extension for CKAN that uses the ParaViewWeb Visualizer to provide views
 for STL files. In the future, it will also provide views for DICOM files (and
@@ -43,8 +43,6 @@ Tested with CKAN 2.8.2.
 Installation
 ------------
 
-Not yet set up with PyPI - cannot be installed with `pip` yet.
-
 .. Add any additional install steps to the list below.
    For example installing any non-Python dependencies or adding any required
    config settings.
@@ -57,15 +55,22 @@ To install ckanext-paraview:
 
 2. Install the ckanext-paraview Python package into your virtual environment::
 
-     pip install ckanext-paraview
+     pip install -e pip install -e git+https://github.com/SFB-ELAINE/ckanext-paraview.git#egg=ckanext-paraview
 
 3. Add ``paraview`` to the ``ckan.plugins`` setting in your CKAN
    config file (by default the config file is located at
    ``/etc/ckan/default/production.ini``).
 
-4. Restart CKAN. For example if you've deployed CKAN with Apache on Ubuntu::
+4. For CKAN to recognize STL files, add the following line to the list of allowed
+resource formats in `ckan/config/resource_formats.json`.
+
+```["STL", "Stereolithography", "model/stl", []]```
+
+
+5. Restart CKAN. For example if you've deployed CKAN with Apache on Ubuntu::
 
      sudo service apache2 reload
+
 
 
 ---------------
@@ -77,12 +82,6 @@ Document any optional config settings here. For example::
     # The minimum number of hours to wait before re-checking a resource
     # (optional, default: 24).
     ckanext.paraview.some_setting = some_default_value
-
-For CKAN to recognize STL files, add the following line to the list of allowed
-resource formats in `ckan/config/resource_formats.json`.
-
-`["STL", "Stereolithography", "model/stl", []]`
-
 
 ------------------------
 Development Installation
@@ -111,9 +110,9 @@ coverage installed in your virtualenv (``pip install coverage``) then run::
     nosetests --nologcapture --with-pylons=test.ini --with-coverage --cover-package=ckanext.paraview --cover-inclusive --cover-erase --cover-tests
 
 
----------------------------------
+--------------------------------------
 Registering ckanext-paraview on PyPI
----------------------------------
+--------------------------------------
 
 ckanext-paraview should be availabe on PyPI as
 https://pypi.python.org/pypi/ckanext-paraview. If that link doesn't work, then
@@ -140,9 +139,9 @@ steps:
        git push --tags
 
 
-----------------------------------------
+---------------------------------------------
 Releasing a New Version of ckanext-paraview
-----------------------------------------
+---------------------------------------------
 
 ckanext-paraview is availabe on PyPI as https://pypi.python.org/pypi/ckanext-paraview.
 To publish a new version to PyPI follow these steps:
