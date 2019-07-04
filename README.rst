@@ -32,6 +32,8 @@ This is an extension for CKAN that uses the ParaViewWeb Visualizer to provide vi
 for STL files. In the future, it will also provide views for DICOM files (and
 hopefully other types as well).
 
+This extension is NOT finished and should not yet be installed with a production instance of CKAN.
+
 
 ------------
 Requirements
@@ -62,9 +64,9 @@ To install ckanext-paraview:
    ``/etc/ckan/default/production.ini``).
 
 4. For CKAN to recognize STL files, add the following line to the list of allowed
-resource formats in `ckan/config/resource_formats.json`.
+resource formats in `ckan/config/resource_formats.json`::
 
-```["STL", "Stereolithography", "model/stl", []]```
+    ["STL", "Stereolithography", "model/stl", []]
 
 
 5. Restart CKAN. For example if you've deployed CKAN with Apache on Ubuntu::

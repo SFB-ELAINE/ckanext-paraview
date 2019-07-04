@@ -18,6 +18,7 @@ def add_link (resource_id, package_id):
     :returns: None
     '''
     #TODO: make it so the whole dataset is processed in this way when someone views one resource
+    # (should be doable using the package_id and the API action functions)
     #TODO: update for DICOM
     try:
         f = open("/var/lib/ckan/default/pvw/" + package_id + "/" + \
@@ -38,7 +39,8 @@ def add_link (resource_id, package_id):
 class ParaviewPlugin(plugins.SingletonPlugin):
     plugins.implements(plugins.IConfigurer)
     plugins.implements(plugins.IResourceView)
-    plugins.implements(plugins.IResourceController)
+    plugins.implements(plugins.IResourceController, inherit=True)
+    plugins.implements(plugins.IPackageController, inherit=True)
     plugins.implements(plugins.ITemplateHelpers)
 
     # IConfigurer
@@ -75,18 +77,6 @@ class ParaviewPlugin(plugins.SingletonPlugin):
 
     # IResourceController
 
-    def before_create(self, context, resource):
-        pass
-
-    def after_create(self, context, resource):
-        pass
-
-    def before_update(self, context, current, resource):
-        pass
-
-    def after_update(self, context, resource):
-        pass
-
     def before_delete(self, context, resource, resources):
         '''
         If a file has been opened with the PVW Visualizer, an extra file has
@@ -108,13 +98,21 @@ class ParaviewPlugin(plugins.SingletonPlugin):
         except:
             pass
 
+    # IPackageController
 
-    def after_delete(self, context, resources):
-        pass
-
-    def before_show(self, resource_dict):
-        pass
-
+    def after_delete(self, context, pkg_dict):
+        '''
+        If any files in this dataset have been opened with the PVW Visualizer,
+        then a directory was created to hold their .stl openable files. This
+        function deletes that directory (and any files in it) when the dataset
+        is deleted.
+        '''
+        path = "/var/lib/ckan/default/pvw/" + pkg_dict["id"]
+        try:
+            os.system("rm -rf " + path)
+            return pkg_dict
+        except:
+            return pkg_dict
 
     # ITemplateHelpers
 
