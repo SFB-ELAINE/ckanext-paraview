@@ -79,9 +79,6 @@ class ParaviewPlugin(plugins.SingletonPlugin):
         resource = data_dict["resource"]
         return (resource.get('format', '').lower() in ['stl'])
 
-    # TODO: implement setup_template_variables?
-    # this is probably where you'll pass the file to open
-    # what exactly is this supposed to return
     def setup_template_variables(self, context, data_dict):
         return data_dict
 
