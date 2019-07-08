@@ -1,6 +1,7 @@
 import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
 import os
+import re
 
 def add_links (package_id):
     '''
@@ -32,6 +33,16 @@ def add_links (package_id):
         if resource['format'] == 'STL':
             resource_id = resource["id"]
             resource_name = resource["name"]
+
+            # TODO: update for other file formats
+            # check whether the resource name ends with the correct file extension
+            pattern = r".*\.stl$"
+            regexp = re.compile(pattern)
+            result = regexp.search(resource_name)
+            # if no match, add the file extension to the resource name
+            if (result == None):
+                resource_name += ".stl"
+
             # attempt to open the file - if this fails, then the file doesn't exist
             # and we need to create it
             try:
@@ -51,8 +62,41 @@ def add_links (package_id):
                     # and then create the link
                     os.mkdir("/var/lib/ckan/default/pvw/" + package_id)
                     os.link(src, dst)
-
     return ""
+
+def delete_resource_link(resource):
+    '''
+    If a file has been opened with the PVW Visualizer, an extra file has
+    been created with a file extension allowing the Visualizer to
+    recognize its type. This function deletes that extra file when the
+    original resource is deleted.
+    '''
+    # TODO: update for other file types
+
+    # get the human-readable name of the file
+    resource_dict = toolkit.get_action("resource_show")({}, {"id": resource["id"]})
+    filename = resource_dict["name"]
+    path = ""
+
+    # check whether the resource name ends with the correct file extension
+    pattern = r".*\.stl$"
+    regexp = re.compile(pattern)
+    result = regexp.search(filename)
+    # if no match, add the file extension to the resource name
+    if (result == None):
+        filename += ".stl"
+
+    # we don't know the package ID of the dataset the resource belongs to,
+    # so we need to manually find the name of the directory that contains
+    # the .stl file
+    for dirname, dirs, files in os.walk("/var/lib/ckan/default/pvw/"):
+        if filename in files:
+            path = os.path.join(dirname, filename)
+
+    try:
+        os.remove(path)
+    except:
+        pass
 
 class ParaviewPlugin(plugins.SingletonPlugin):
     plugins.implements(plugins.IConfigurer)
@@ -93,30 +137,10 @@ class ParaviewPlugin(plugins.SingletonPlugin):
     # IResourceController
 
     def before_delete(self, context, resource, resources):
-        '''
-        If a file has been opened with the PVW Visualizer, an extra file has
-        been created with a file extension allowing the Visualizer to
-        recognize its type. This function deletes that extra file when the
-        original resource is deleted.
-        '''
-        # TODO: update for other file types
+        delete_resource_link(resource)
 
-        # get the human-readable name of the file
-        resource_dict = toolkit.get_action("resource_show")({}, {"id": resource["id"]})
-        filename = resource_dict["name"]
-        path = ""
-
-        # we don't know the package ID of the dataset the resource belongs to,
-        # so we need to manually find the name ofthe directory that contains
-        # the .stl file
-        for dirname, dirs, files in os.walk("/var/lib/ckan/default/pvw/"):
-            if filename in files:
-                path = os.path.join(dirname, filename)
-
-        try:
-            os.remove(path)
-        except:
-            pass
+    def before_update(self, context, current, resource):
+        delete_resource_link(current)
 
     # IPackageController
 
