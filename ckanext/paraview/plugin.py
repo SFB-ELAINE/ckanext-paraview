@@ -18,9 +18,8 @@ def add_links (package_id):
     :returns: None
     '''
 
-    #TODO: update for DICOM
-
-    # dictionary with metadata about the package
+    #TODO: update for other file types
+    # get dictionary with metadata about the package
     pkg_dict = toolkit.get_action('package_show')({}, {'id': package_id})
     # list of dictionaries of metadata about each resource in the package
     resources = pkg_dict['resources']
@@ -29,24 +28,30 @@ def add_links (package_id):
     # don't exist yet
     for resource in resources:
         # check if the file is actually an STL file; only process it if it is
+        # TODO: update for other file formats
         if resource['format'] == 'STL':
             resource_id = resource["id"]
+            resource_name = resource["name"]
+            # attempt to open the file - if this fails, then the file doesn't exist
+            # and we need to create it
             try:
-                f = open("/var/lib/ckan/default/pvw/" + package_id + "/" + \
-                        resource_id + ".stl")
+                f = open("/var/lib/ckan/default/pvw/" + package_id + "/" + resource_name)
                 f.close()
             except IOError:
                 # create the link if it doesn't exist
                 src = "/var/lib/ckan/default/resources/" + resource_id[0:3] + \
                     "/" + resource_id[3:6] + "/" + resource_id[6:]
-                dst = "/var/lib/ckan/default/pvw/" + package_id + "/" + resource_id + ".stl"
+                dst = "/var/lib/ckan/default/pvw/" + package_id + "/" + resource_name
+                # try to create the link - this may fail if the dataset directory for links
+                # doesn't exist yet
                 try:
                     os.link(src, dst)
                 except OSError:
-                    # sometimes we have to create the dataset directory to contain
-                    # the .stl resource files
+                    # create the directory to hold links to files in this dataset
+                    # and then create the link
                     os.mkdir("/var/lib/ckan/default/pvw/" + package_id)
                     os.link(src, dst)
+
     return ""
 
 class ParaviewPlugin(plugins.SingletonPlugin):
@@ -75,7 +80,7 @@ class ParaviewPlugin(plugins.SingletonPlugin):
 
     def can_view(self, data_dict):
         # right now, we can only view STL files with the extension
-        # TODO: add DICOM files
+        # TODO: update for other file types
         resource = data_dict["resource"]
         return (resource.get('format', '').lower() in ['stl'])
 
@@ -94,15 +99,20 @@ class ParaviewPlugin(plugins.SingletonPlugin):
         recognize its type. This function deletes that extra file when the
         original resource is deleted.
         '''
-        filename = resource["id"] + ".stl"
+        # TODO: update for other file types
+
+        # get the human-readable name of the file
+        resource_dict = toolkit.get_action("resource_show")({}, {"id": resource["id"]})
+        filename = resource_dict["name"]
         path = ""
+
         # we don't know the package ID of the dataset the resource belongs to,
         # so we need to manually find the name ofthe directory that contains
         # the .stl file
         for dirname, dirs, files in os.walk("/var/lib/ckan/default/pvw/"):
             if filename in files:
                 path = os.path.join(dirname, filename)
-        # TODO: update for DICOM
+
         try:
             os.remove(path)
         except:
@@ -117,12 +127,22 @@ class ParaviewPlugin(plugins.SingletonPlugin):
         function deletes that directory (and any files in it) when the dataset
         is deleted.
         '''
-        path = "/var/lib/ckan/default/pvw/" + pkg_dict["id"]
+        path = ""
+        # try to create the path to the directory to delete
+        # if we don't get passed the correct thing, this will fail -
+        # in that case, just return the pkg_dict
+        try:
+            path = "/var/lib/ckan/default/pvw/" + pkg_dict["id"]
+        except TypeError:
+            return pkg_dict
+
+        # if it didn't fail, try to delete the directory (and just exit if
+        # this fails too)
         try:
             os.system("rm -rf " + path)
-            return pkg_dict
         except:
-            return pkg_dict
+            pass
+        return pkg_dict
 
     # ITemplateHelpers
 
