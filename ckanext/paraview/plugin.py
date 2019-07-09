@@ -60,7 +60,7 @@ def add_links (package_id):
                 except OSError:
                     # create the directory to hold links to files in this dataset
                     # and then create the link
-                    os.mkdir("/var/lib/ckan/default/pvw/" + package_id)
+                    os.makedirs("/var/lib/ckan/default/pvw/" + package_id)
                     os.link(src, dst)
     return ""
 
