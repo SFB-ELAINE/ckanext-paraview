@@ -2,27 +2,31 @@ import ckan.plugins as plugins
 import ckan.plugins.toolkit as toolkit
 import os
 import re
+import mimetypes
+import logging
 
-def add_links (package_id, rsrc_id):
+log = logging.getLogger(__name__)
+
+def add_links (package_id, r_id):
     '''
     Called in pvw_view.html when a user tries to open a resource using this view.
-    The PVW Visualizer only displays files whose types it can recognize, so
-    this function creates hard links for the resources in the same dataset as the
-    viewed resource to file names with .stl extensions, which allows the
-    Visualizer to open the files in the view. Since a user might want to view
-    more than one file at once, all files in the dataset are processed and
-    put into the same directory where they are all accessible from any
-    resource's view. Each time the view is opened, we check to make sure that all
-    resources in the dataset have been processed, since more may have been added
-    since the last time someone viewed the dataset.
+    The PVW Visualizer only opens files with file extensions that it recognizes,
+    so this function creates hard links for all of the resources in the given
+    dataset with file extensions in their names so that the viewer can display
+    the files. Since a user might want to view more than one file at once, all
+    files in the dataset are processed and put into the same directory where they
+    are all accessible from the Visualizer. Each time the view is opened, we
+    re-process all of the resources in the dataset, since some may have been
+    added, removed, or changed since the last time the dataset was viewed.
 
-    :returns: None
+    Returns the name of the resource actually being viewed so that it can
+    be auto-loaded.
     '''
 
     file_name = ""
 
-    #TODO: update for other file types
     # get dictionary with metadata about the package
+    # TODO: context!
     pkg_dict = toolkit.get_action('package_show')({}, {'id': package_id})
     # list of dictionaries of metadata about each resource in the package
     resources = pkg_dict['resources']
@@ -30,44 +34,66 @@ def add_links (package_id, rsrc_id):
     # iterate through the list of resources and create the .stl links if they
     # don't exist yet
     for resource in resources:
-        # check if the file is actually an STL file; only process it if it is
-        # TODO: update for other file formats
+        # check if the file is a viewable file format
+        # TODO: instead of doing this manually, add a parameter in the config file
+        # and use that to determine which file formats are viewable with the
+        # extension
+        resource_name = ""
         if resource['format'] == 'STL':
-            resource_id = resource["id"]
-            resource_name = resource["name"]
+            resource_name = create_link(".stl", package_id, resource)
+        elif resource['format'] == 'VTK':
+            resource_name = create_link(".vtk", package_id, resource)
 
-            # TODO: update for other file formats
-            # check whether the resource name ends with the correct file extension
-            pattern = r".*\.stl$"
-            regexp = re.compile(pattern)
-            result = regexp.search(resource_name)
-            # if no match, add the file extension to the resource name
-            if (result == None):
-                resource_name += ".stl"
+        # if this resource is the one being opened
+        if resource["id"] == r_id:
+            file_name = resource_name
 
-            # attempt to open the file - if this fails, then the file doesn't exist
-            # and we need to create it
-            try:
-                f = open("/var/lib/ckan/default/pvw/" + package_id + "/" + resource_name)
-                f.close()
-            except IOError:
-                # create the link if it doesn't exist
-                src = "/var/lib/ckan/default/resources/" + resource_id[0:3] + \
-                    "/" + resource_id[3:6] + "/" + resource_id[6:]
-                dst = "/var/lib/ckan/default/pvw/" + package_id + "/" + resource_name
-                # try to create the link - this may fail if the dataset directory for links
-                # doesn't exist yet
-                try:
-                    os.link(src, dst)
-                except OSError:
-                    # create the directory to hold links to files in this dataset
-                    # and then create the link
-                    os.makedirs("/var/lib/ckan/default/pvw/" + package_id)
-                    os.link(src, dst)
-            # if this resource is the one being opened
-            if resource_id == rsrc_id:
-                file_name = resource_name
     return file_name
+
+def create_link (file_format, package_id, resource):
+    '''
+    Given a file format, package ID, and resource dictionary, this function
+    actually creates a hard link so that ParaView can display the resource.
+    The file format is necessary to pass in so that the hard link can be given
+    the correct file extension. Returns the name of the hard link. Called only
+    by add_links().
+
+    Returns the name of the resource actually being viewed so that it can
+    be auto-loaded.
+    '''
+
+    resource_id = resource["id"]
+    resource_name = resource["name"]
+
+    # check whether the resource name ends with the correct file extension
+    pattern = r".*\{}$".format(file_format)
+    regexp = re.compile(pattern)
+    result = regexp.search(resource_name)
+    # if no match, add the file extension to the resource name
+    if (result == None):
+        resource_name += "{}".format(file_format)
+
+    # attempt to open the file - if this fails, then the file doesn't exist
+    # and we need to create it
+    try:
+        f = open("/var/lib/ckan/default/pvw/" + package_id + "/" + resource_name)
+        f.close()
+    except IOError:
+        # create the link if it doesn't exist
+        src = "/var/lib/ckan/default/resources/" + resource_id[0:3] + \
+            "/" + resource_id[3:6] + "/" + resource_id[6:]
+        dst = "/var/lib/ckan/default/pvw/" + package_id + "/" + resource_name
+        # try to create the link - this may fail if the dataset directory for links
+        # doesn't exist yet
+        try:
+            os.link(src, dst)
+        except OSError:
+            # create the directory to hold links to files in this dataset
+            # and then create the link
+            os.makedirs("/var/lib/ckan/default/pvw/" + package_id)
+            os.link(src, dst)
+
+    return resource_name
 
 def delete_resource_link(resource):
     '''
@@ -76,20 +102,27 @@ def delete_resource_link(resource):
     recognize its type. This function deletes that extra file when the
     original resource is deleted.
     '''
-    # TODO: update for other file types
 
     # get the human-readable name of the file
     resource_dict = toolkit.get_action("resource_show")({}, {"id": resource["id"]})
     filename = resource_dict["name"]
     path = ""
 
+    format = resource_dict['format']
+    file_ext = ""
+
+    if format == "STL":
+        file_ext = ".stl"
+    elif format == "VTK":
+        file_ext = ".vtk"
+
     # check whether the resource name ends with the correct file extension
-    pattern = r".*\.stl$"
+    pattern = r".*\{}$".format(file_ext)
     regexp = re.compile(pattern)
     result = regexp.search(filename)
     # if no match, add the file extension to the resource name
     if (result == None):
-        filename += ".stl"
+        filename += file_ext
 
     # we don't know the package ID of the dataset the resource belongs to,
     # so we need to manually find the name of the directory that contains
@@ -113,6 +146,10 @@ class ParaviewPlugin(plugins.SingletonPlugin):
     # IConfigurer
 
     def update_config(self, config_):
+        # add mimetypes so that viewable file formats are recognized
+        mimetypes.add_type("STL", ".stl")
+        mimetypes.add_type("VTK", ".vtk")
+
         toolkit.add_template_directory(config_, 'templates')
         toolkit.add_public_directory(config_, 'public')
         toolkit.add_resource('fanstatic', 'paraview')
@@ -128,10 +165,8 @@ class ParaviewPlugin(plugins.SingletonPlugin):
         }
 
     def can_view(self, data_dict):
-        # right now, we can only view STL files with the extension
-        # TODO: update for other file types
         resource = data_dict["resource"]
-        return (resource.get('format', '').lower() in ['stl'])
+        return (resource.get('format', '').lower() in ['stl', 'vtk'])
 
     def setup_template_variables(self, context, data_dict):
         return data_dict
