@@ -29,8 +29,7 @@ ckanext-paraview
 =====================
 
 This is an extension for CKAN that uses the ParaViewWeb Visualizer to provide views
-for STL files. In the future, it will also provide views for DICOM files (and
-hopefully other types as well).
+for STL and VTK files.
 
 This extension is designed to be used jointly with a ParaViewWeb server running
 in a container built from the Dockerfile here: https://gitlab.elaine.uni-rostock.de/hl201/paraview-docker.
@@ -47,7 +46,7 @@ for the ParaViewWeb server to render files stored in the CKAN datahub instance.
 Requirements
 ------------
 
-Tested with CKAN 2.8.2.
+Tested with CKAN 2.8.2 and CKAN 2.9.0a.
 
 ------------
 Installation
@@ -104,14 +103,14 @@ a file's format and how it will be displayed based on the file's extension; thus
 have correct extensions in order for the Visualizer to display them correctly. Since CKAN stores files
 only using their resource ID number without a file extension, we must add an extension before
 the Visualizer will display files uploaded to CKAN. The extension does this by creating hard links to
-displayable files (currently only STL files) in a dataset when a user attempts to use the Visualizer to
-view one. These hard links have a .stl extension and thus can be opened by the Visualizer. When a resource
+displayable files in a dataset when a user attempts to use the Visualizer to
+view one and adding the correct file extension to the hard link's name. When a resource
 or dataset is deleted, these hard links are also automatically deleted. Hard links to
 resources in the same dataset are all kept in the same directory, identified by
 the dataset's randomly-generated ID.
 
-A user can view any resource that works with this extension (currently just STL
-files) from another resource in the same dataset's view. They can also use the
+A user can view any resource that works with this extension from another resource
+in the same dataset's view. They can also use the
 viewer to display multiple resources from the same dataset in the Visualizer
 simultaneously. To prevent users from viewing files outside of the same dataset,
 the CKAN instance sends the ID of the dataset containing the viewed resource to the
