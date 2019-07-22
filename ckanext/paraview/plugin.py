@@ -3,7 +3,7 @@ import ckan.plugins.toolkit as toolkit
 import os
 import re
 
-def add_links (package_id):
+def add_links (package_id, rsrc_id):
     '''
     Called in pvw_view.html when a user tries to open a resource using this view.
     The PVW Visualizer only displays files whose types it can recognize, so
@@ -18,6 +18,8 @@ def add_links (package_id):
 
     :returns: None
     '''
+
+    file_name = ""
 
     #TODO: update for other file types
     # get dictionary with metadata about the package
@@ -62,7 +64,10 @@ def add_links (package_id):
                     # and then create the link
                     os.makedirs("/var/lib/ckan/default/pvw/" + package_id)
                     os.link(src, dst)
-    return ""
+            # if this resource is the one being opened
+            if resource_id == rsrc_id:
+                file_name = resource_name
+    return file_name
 
 def delete_resource_link(resource):
     '''

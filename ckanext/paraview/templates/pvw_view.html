@@ -1,3 +1,3 @@
-{{ h.paraview_add_links(resource_view.package_id) }}
-<iframe src="http://172.17.0.3/visualizer?data={{ resource_view.package_id }}" frameborder="0" width="100%" height="100%" data-module="data-viewer">
+{% set file_name = h.paraview_add_links(resource_view.package_id, resource_view.resource_id) %}
+<iframe src="http://172.17.0.3/visualizer?data={{ resource_view.package_id }}&amp;file={{ file_name }}" frameborder="0" width="100%" height="100%" data-module="data-viewer">
 </iframe>
