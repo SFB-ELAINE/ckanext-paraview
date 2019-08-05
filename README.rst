@@ -28,8 +28,8 @@
 ckanext-paraview
 =====================
 
-DO NOT USE THIS EXTENSION. It is not secure and could allow unauthorized access
-to private resources. Use this extension instead: https://github.com/SFB-ELAINE/ckanext-vtkjs
+**DO NOT USE THIS EXTENSION. It is not secure and could allow unauthorized access
+to private resources. Use this extension instead: https://github.com/SFB-ELAINE/ckanext-vtkjs**
 
 This is an extension for CKAN that uses the ParaViewWeb Visualizer to provide views
 for STL and VTK files.
